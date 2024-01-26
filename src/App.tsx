@@ -7,6 +7,20 @@ function App() {
     password: "",
   });
 
+  const [signupform, setsignupForm] = useState({
+    username: "",
+    password: "",
+  });
+
+  function signupInputHandler(event: React.FocusEvent<HTMLInputElement>) {
+    console.log("singup form");
+    const { name, value } = event.target;
+    setsignupForm((prevsignupform) => ({
+      ...prevsignupform,
+      [name]: value,
+    }));
+  }
+
   function inputHandler(event: React.FocusEvent<HTMLInputElement>) {
     const { name, value } = event.target;
     setFormData((prevFormData) => ({ ...prevFormData, [name]: value }));
@@ -101,7 +115,7 @@ function App() {
             event.preventDefault();
             console.log(formData);
             await axios
-              .post("http://localhost:3000/signup", formData, {
+              .post("http://localhost:3000/signup", signupform, {
                 headers: {
                   Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
@@ -120,10 +134,10 @@ function App() {
           <input
             className=" rounded-2 px-2"
             type="text"
-            value={formData.username}
+            value={signupform.username}
             name="username"
             id=""
-            onChange={inputHandler}
+            onChange={signupInputHandler}
             placeholder="Phone number, username or email address"
             style={{
               height: "40px",
@@ -134,10 +148,10 @@ function App() {
           <input
             className=" rounded-2 px-2"
             type="text"
-            value={formData.password}
+            value={signupform.password}
             name="password"
             id=""
-            onChange={inputHandler}
+            onChange={signupInputHandler}
             placeholder="Password"
             style={{
               height: "40px",

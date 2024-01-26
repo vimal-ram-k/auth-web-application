@@ -1,6 +1,6 @@
 import axios from "axios";
-import React, { useEffect } from "react";
-
+import { useEffect } from "react";
+import { Suspense } from "react";
 function Home() {
   useEffect(() => {
     const checkToken = async () => {
@@ -26,11 +26,17 @@ function Home() {
       });
   };
   return (
-    <div>
-      <div>Home</div>
-      <button onClick={logout}>Log out</button>
-    </div>
+    <Suspense fallback={<Loading />}>
+      <div>
+        <div>Home</div>
+        <button onClick={logout}>Log out</button>
+      </div>
+    </Suspense>
   );
+}
+
+function Loading() {
+  return <div>...Loading</div>;
 }
 
 export default Home;

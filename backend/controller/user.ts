@@ -37,26 +37,21 @@ userRouter.post("/signup", async (req: ExtendedRequest, res: Response) => {
 userRouter.post("/signin", async (req: ExtendedRequest, res: Response) => {
   console.log(req.body.username);
   if (req.headers.authorization) {
-    const user = await userModule
-      .findOne({ username: req.body.username })
-      .then((user) => {
-        return user;
-      });
+    const user = await userModule.findOne({ username: req.body.username });
+
     if (user) {
       if (user.password === req.body.password) {
         const token = jwt.sign({ id: user.id }, "123214214124124214", {
           expiresIn: "1h",
         });
 
-        res.json({
+        return res.json({
           message: "jwt created",
           token: token,
         });
       } else {
-        res.send("check your password");
+        res.status(400).json({ message: "user already exists" });
       }
-    } else {
-      res.status(409).json({ error: "User already exists" });
     }
   } else {
     const user = await userModule
@@ -78,10 +73,7 @@ userRouter.post("/signin", async (req: ExtendedRequest, res: Response) => {
           message: "jwt created",
           token: token,
         });
-      } else {
-        res.send("check your password");
       }
-      res.send({ user });
     }
   }
 });
@@ -98,7 +90,7 @@ userRouter.get("/login", async (req: ExtendedRequest, res: Response) => {
         token,
         "123214214124124214"
       )) as jwt.JwtPayload;
-      console.log(decode.id);
+      console.log(decode);
       const user = await userModule.findOne({ _id: decode.id });
 
       if (user) {
@@ -120,13 +112,15 @@ userRouter.get("/logout", async (req: ExtendedRequest, res: Response) => {
     const token = req.headers.authorization?.split(" ")[1];
 
     if (token) {
-      (await jwt.verify(token, "123214214124124214")) as jwt.JwtPayload;
-      res.json({ message: "logged off successfully" });
-    } else {
-      res.status(401).json({ error: "Login first" });
+      const decode = (await jwt.verify(
+        token,
+        "123214214124124214"
+      )) as jwt.JwtPayload;
+
+      if (decode) {
+        res.status(200).json({ message: "Logged out" });
+      }
     }
-  } else {
-    res.status(401).json({ error: "Login first" });
   }
 });
 export default userRouter;
