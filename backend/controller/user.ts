@@ -35,30 +35,32 @@ userRouter.post("/signup", async (req: ExtendedRequest, res: Response) => {
 });
 
 userRouter.post("/signin", async (req: ExtendedRequest, res: Response) => {
-  console.log(req.body.username);
+  console.log(req.headers.authorization);
   if (req.headers.authorization) {
-    const user = await userModule.findOne({ username: req.body.username });
-
-    if (user) {
-      if (user.password === req.body.password) {
-        const token = jwt.sign({ id: user.id }, "123214214124124214", {
-          expiresIn: "1h",
-        });
-
-        return res.json({
-          message: "jwt created",
-          token: token,
-        });
-      } else {
-        res.status(400).json({ message: "user already exists" });
-      }
-    }
-  } else {
     const user = await userModule
       .findOne({ username: req.body.username })
       .then((user) => {
         return user;
       });
+
+    if (user) {
+      const pasword = await bcrypt.compare(req.body.password, user.password);
+      if (pasword) {
+        const token = jwt.sign({ id: user.id }, "123214214124124214", {
+          expiresIn: "1h",
+        });
+        console.log(user);
+
+        res.json({
+          message: "jwt created",
+          token: token,
+          user: { username: user.username },
+        });
+      }
+    }
+  } else {
+    const user = await userModule.findOne({ username: req.body.username });
+    console.log(user);
     if (user) {
       const password_verified = await bcrypt.compare(
         req.body.password,
@@ -79,30 +81,33 @@ userRouter.post("/signin", async (req: ExtendedRequest, res: Response) => {
 });
 
 userRouter.get("/login", async (req: ExtendedRequest, res: Response) => {
-  console.log(req.headers);
-  console.log(req.header);
   if (req.headers.authorization) {
     const token = req.headers.authorization?.split(" ")[1];
-    console.log(token);
 
     if (token) {
-      const decode = (await jwt.verify(
-        token,
-        "123214214124124214"
-      )) as jwt.JwtPayload;
-      console.log(decode);
-      const user = await userModule.findOne({ _id: decode.id });
+      try {
+        const decode = (await jwt.verify(
+          token,
+          "123214214124124214"
+        )) as jwt.JwtPayload;
 
-      if (user) {
-        res.json({ token: token, user: { user } });
-      } else {
-        res.status(404).json({ error: "User not found" });
+        const user = await userModule.findOne({ _id: decode.id });
+
+        if (user) {
+          res.json({ token: token, user: { username: user.username } });
+        } else {
+          res.status(404).json({ error: "User not found" });
+        }
+      } catch (err) {
+        if (err instanceof jwt.TokenExpiredError) {
+          res.status(401).json({ error: "Token expired" });
+        } else {
+          res.status(500).json({ error: "Internal server error" });
+        }
       }
-    } else {
-      res.status(401).json({ error: "Unauthorized" });
     }
   } else {
-    res.status(401).json({ error: "Login again" });
+    res.status(404).json("user not exits");
   }
 });
 
@@ -116,10 +121,6 @@ userRouter.get("/logout", async (req: ExtendedRequest, res: Response) => {
         token,
         "123214214124124214"
       )) as jwt.JwtPayload;
-
-      if (decode) {
-        res.status(200).json({ message: "Logged out" });
-      }
     }
   }
 });
